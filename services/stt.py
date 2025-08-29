@@ -170,8 +170,8 @@ class AssemblyAIStreamingWrapper:
                     sample_rate=sample_rate,
                     on_data=self._on_transcript_received,
                     on_error=self._on_error_received,
-                    on_open=self._on_session_opened,
-                    on_close=self._on_session_closed
+                    on_open=self._on_session_opened
+                    # Note: Removed on_close callback as it was causing premature session termination
                 )
                 # Connect using the standard connect method
                 self.client.connect()
@@ -243,7 +243,11 @@ class AssemblyAIStreamingWrapper:
     def _on_error_received(self, error):
         """Handle errors from newer API (RealtimeError)"""
         error_msg = getattr(error, 'error', str(error))
-        logger.warning(f"Streaming error: {error_msg}")
+        # Only log non-deprecation warnings as warnings
+        if 'deprecated' in error_msg.lower():
+            logger.debug(f"AssemblyAI deprecation notice: {error_msg}")
+        else:
+            logger.warning(f"Streaming error: {error_msg}")
     
     def _on_session_opened(self, session_opened):
         """Handle session opened event"""
@@ -252,7 +256,9 @@ class AssemblyAIStreamingWrapper:
     
     def _on_session_closed(self):
         """Handle session closed event"""
-        logger.info("AssemblyAI session closed")
+        # This method is kept for potential future use but not registered
+        # as it was causing premature session closure
+        logger.info("AssemblyAI session closed by server")
         self.is_connected = False
     
     async def send_audio(self, audio_chunk: bytes):

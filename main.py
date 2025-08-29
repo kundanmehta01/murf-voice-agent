@@ -1038,7 +1038,8 @@ async def websocket_audio(ws: WebSocket):
         logger.info("Creating AssemblyAI streaming session...")
         session = await stream_transcribe(
             on_transcript=on_transcript_cb,
-            loop=loop
+            loop=loop,
+            session_id=session_id
         )
         
         if session is None:
