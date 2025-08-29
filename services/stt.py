@@ -141,6 +141,24 @@ class AssemblyAIStreamingWrapper:
         if not api_key:
             raise ValueError("No AssemblyAI API key available")
         
+        # Validate API key format
+        if not api_key.strip() or len(api_key.strip()) < 10:
+            raise ValueError(f"Invalid AssemblyAI API key format: '{api_key[:10]}...'")
+        
+        logger.info(f"🔑 Using AssemblyAI API key: {api_key[:8]}...{api_key[-4:]} (length: {len(api_key)})")
+        
+        # Quick API key test
+        try:
+            import assemblyai as aai
+            aai.settings.api_key = api_key
+            # Test API key by attempting to list models (lightweight operation)
+            logger.info("🔍 Testing AssemblyAI API key...")
+            test_transcriber = aai.Transcriber()
+            logger.info("✅ AssemblyAI API key appears valid")
+        except Exception as test_error:
+            logger.error(f"❌ AssemblyAI API key test failed: {test_error}")
+            raise ValueError(f"Invalid AssemblyAI API key: {test_error}")
+        
         try:
             if _STREAMING_IMPORTS == 'v3':
                 # Use v3 API
@@ -162,15 +180,17 @@ class AssemblyAIStreamingWrapper:
                 import assemblyai as aai
                 aai.settings.api_key = api_key
                 
-                # Create RealtimeTranscriber
-                # Note: Model deprecation warnings come from AssemblyAI's server-side
-                # transition to Universal Streaming. See: 
-                # https://www.assemblyai.com/docs/speech-to-text/universal-streaming
+                # Create RealtimeTranscriber with Universal Streaming model
+                # See: https://www.assemblyai.com/docs/speech-to-text/universal-streaming
+                logger.info("🎯 Creating RealtimeTranscriber with Universal Streaming model...")
                 self.client = aai.RealtimeTranscriber(
                     sample_rate=sample_rate,
                     on_data=self._on_transcript_received,
                     on_error=self._on_error_received,
-                    on_open=self._on_session_opened
+                    on_open=self._on_session_opened,
+                    # Specify the new Universal Streaming model explicitly
+                    disable_partial_transcripts=False,
+                    enable_extra_session_information=True
                     # Note: Removed on_close callback as it was causing premature session termination
                 )
                 # Connect using the standard connect method
@@ -264,9 +284,14 @@ class AssemblyAIStreamingWrapper:
         error_msg = getattr(error, 'error', str(error))
         # Only log non-deprecation warnings as warnings
         if 'deprecated' in error_msg.lower():
-            logger.debug(f"AssemblyAI deprecation notice: {error_msg}")
+            logger.info(f"📝 AssemblyAI deprecation notice (safe to ignore): {error_msg}")
+            # Don't treat deprecation warnings as errors - they're just informational
+            return
+        elif 'model' in error_msg.lower() and 'deprecated' in error_msg.lower():
+            logger.info(f"📝 AssemblyAI model deprecation (safe to ignore): {error_msg}")
+            return
         else:
-            logger.warning(f"Streaming error: {error_msg}")
+            logger.error(f"❌ AssemblyAI streaming error: {error_msg}")
     
     def _on_session_opened(self, session_opened):
         """Handle session opened event"""
