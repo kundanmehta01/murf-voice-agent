@@ -3,8 +3,8 @@ services:
     name: murf-voice-agent
     env: python
     plan: free
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: python main.py
+    buildCommand: pip install --upgrade pip && pip install --only-binary=all -r requirements.txt
+    startCommand: python main_simple.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
