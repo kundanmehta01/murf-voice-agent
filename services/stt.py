@@ -78,103 +78,171 @@ def is_stt_available(session_id: Optional[str] = None) -> bool:
     return transcriber is not None or (STT_AVAILABLE and _transcriber is not None)
 
 
-# ---------- Streaming implementation using AssemblyAI v3 ----------
+# ---------- Streaming implementation using AssemblyAI ----------
 _V3_OK = False
+_STREAMING_IMPORTS = None
+
+# Try multiple import paths for different AssemblyAI versions
 try:
-    from assemblyai.streaming.v3 import (  # type: ignore
-        BeginEvent,
-        StreamingClient,
-        StreamingClientOptions,
-        StreamingParameters,
-        StreamingSessionParameters,
-        StreamingError,
+    # Try newer AssemblyAI SDK structure
+    from assemblyai.streaming import (
+        RealtimeService,
+        RealtimeTranscriber,
         StreamingEvents,
-        TurnEvent,
-        TerminationEvent,
+        StreamingError,
     )
     _V3_OK = True
-except Exception as e:
-    logger.warning(f"AssemblyAI v3 streaming import failed: {e}")
-    _V3_OK = False
+    _STREAMING_IMPORTS = 'new'
+    logger.info("Using newer AssemblyAI streaming API")
+except ImportError:
+    try:
+        # Try legacy v3 import path
+        from assemblyai.streaming.v3 import (  # type: ignore
+            BeginEvent,
+            StreamingClient,
+            StreamingClientOptions,
+            StreamingParameters,
+            StreamingSessionParameters,
+            StreamingError,
+            StreamingEvents,
+            TurnEvent,
+            TerminationEvent,
+        )
+        _V3_OK = True
+        _STREAMING_IMPORTS = 'v3'
+        logger.info("Using AssemblyAI v3 streaming API")
+    except ImportError:
+        try:
+            # Try basic streaming import
+            import assemblyai as aai
+            if hasattr(aai, 'RealtimeTranscriber'):
+                _V3_OK = True
+                _STREAMING_IMPORTS = 'basic'
+                logger.info("Using basic AssemblyAI streaming API")
+            else:
+                raise ImportError("No streaming support found")
+        except Exception as e:
+            logger.warning(f"All AssemblyAI streaming import attempts failed: {e}")
+            _V3_OK = False
+            _STREAMING_IMPORTS = None
 
 
 class AssemblyAIStreamingWrapper:
-    """Wrapper for AssemblyAI streaming client following the reference implementation"""
-    def __init__(self, sample_rate=16000, on_transcript=None, loop=None):
+    """Wrapper for AssemblyAI streaming client that handles multiple API versions"""
+    def __init__(self, sample_rate=16000, on_transcript=None, loop=None, session_id=None):
         self.on_transcript_callback = on_transcript
         self.is_connected = False
         self.loop = loop or asyncio.get_event_loop()
+        self.client = None
         
+        # Get API key (user-provided or environment)
+        api_key = get_effective_api_key('assemblyai', session_id) or ASSEMBLYAI_API_KEY
         
-        self.client = StreamingClient(
-            StreamingClientOptions(
-                api_key=ASSEMBLYAI_API_KEY,
-                api_host="streaming.assemblyai.com"
-            )
-        )
-        
-        
-        self._setup_event_handlers()
-        
+        if not api_key:
+            raise ValueError("No AssemblyAI API key available")
         
         try:
-            # Enable turn formatting from the start for proper turn detection
-            self.client.connect(StreamingParameters(
-                sample_rate=sample_rate,
-                format_turns=True,  # Enable turn detection from the beginning
-                disable_partial_transcripts=False  # Keep partial transcripts for real-time feedback
-            ))
+            if _STREAMING_IMPORTS == 'v3':
+                # Use v3 API
+                self.client = StreamingClient(
+                    StreamingClientOptions(
+                        api_key=api_key,
+                        api_host="streaming.assemblyai.com"
+                    )
+                )
+                self._setup_v3_event_handlers()
+                # Connect with v3 parameters
+                self.client.connect(StreamingParameters(
+                    sample_rate=sample_rate,
+                    format_turns=True,
+                    disable_partial_transcripts=False
+                ))
+            elif _STREAMING_IMPORTS == 'new' or _STREAMING_IMPORTS == 'basic':
+                # Use newer/basic API
+                import assemblyai as aai
+                aai.settings.api_key = api_key
+                self.client = aai.RealtimeTranscriber(
+                    sample_rate=sample_rate,
+                    on_data=self._on_transcript_received,
+                    on_error=self._on_error_received
+                )
+                # Connect method may differ
+                if hasattr(self.client, 'connect'):
+                    self.client.connect()
+                else:
+                    # Newer API might auto-connect or use different method
+                    pass
+            else:
+                raise ValueError(f"Unsupported streaming API: {_STREAMING_IMPORTS}")
+            
             self.is_connected = True
-            logger.info("AssemblyAI streaming client connected with turn detection enabled")
+            logger.info(f"AssemblyAI streaming client connected using {_STREAMING_IMPORTS} API")
+            
         except Exception as e:
-            logger.error(f"Failed to connect: {e}")
+            logger.error(f"Failed to connect AssemblyAI streaming: {e}")
             raise
     
-    def _setup_event_handlers(self):
-        """Set up event handlers following the reference implementation pattern"""
-        
-        # Store self reference for use in handlers
+    def _setup_v3_event_handlers(self):
+        """Set up event handlers for v3 API"""
         wrapper = self
         
-        # The SDK passes 'self' as first argument, then the event
-        def on_begin(self_arg, event: BeginEvent):
-            # Silent - no console output for cleaner logs
-            logger.info(f"Session started: {event.id}")
+        def on_begin(self_arg, event):
+            logger.info(f"V3 Session started: {getattr(event, 'id', 'unknown')}")
         
-        def on_turn(self_arg, event: TurnEvent):
-            # Don't print transcripts here - they'll be handled by the main app
-            if event.transcript:
-                # Send to callback if available with turn status
+        def on_turn(self_arg, event):
+            if hasattr(event, 'transcript') and event.transcript:
                 if wrapper.on_transcript_callback and wrapper.loop:
                     try:
-                        # Schedule the async callback to run in the main event loop
                         future = asyncio.run_coroutine_threadsafe(
-                            wrapper.on_transcript_callback(event.transcript, event.end_of_turn),
+                            wrapper.on_transcript_callback(event.transcript, getattr(event, 'end_of_turn', False)),
                             wrapper.loop
                         )
-                        # We can optionally add a timeout or check the result
-                        # future.result(timeout=2)
                     except Exception as e:
                         logger.error(f"Failed to schedule transcript callback: {e}")
-                elif not wrapper.loop:
-                    logger.warning("No event loop provided for transcript callback.")
-                else:
-                    logger.info(f"Transcript received (callback not set): {event.transcript}")
         
-        def on_terminated(self_arg, event: TerminationEvent):
+        def on_terminated(self_arg, event):
             duration = getattr(event, 'audio_duration_seconds', 0)
-            # Silent - no console output for cleaner logs
-            logger.info(f"Session terminated: {duration} seconds processed")
+            logger.info(f"V3 Session terminated: {duration} seconds processed")
         
-        def on_error(self_arg, error: StreamingError):
-            # Silent - just log to logger, not console
-            logger.warning(f"Streaming error: {error}")
+        def on_error(self_arg, error):
+            logger.warning(f"V3 Streaming error: {error}")
         
         # Register handlers
-        self.client.on(StreamingEvents.Begin, on_begin)
-        self.client.on(StreamingEvents.Turn, on_turn)
-        self.client.on(StreamingEvents.Termination, on_terminated)
-        self.client.on(StreamingEvents.Error, on_error)
+        if hasattr(self.client, 'on'):
+            self.client.on(StreamingEvents.Begin, on_begin)
+            self.client.on(StreamingEvents.Turn, on_turn)
+            self.client.on(StreamingEvents.Termination, on_terminated)
+            self.client.on(StreamingEvents.Error, on_error)
+    
+    def _on_transcript_received(self, transcript_data):
+        """Handle transcript data from newer API"""
+        if self.on_transcript_callback and self.loop:
+            try:
+                # Extract text from transcript data
+                text = None
+                end_of_turn = False
+                
+                if hasattr(transcript_data, 'text'):
+                    text = transcript_data.text
+                    end_of_turn = getattr(transcript_data, 'message_type', '') == 'FinalTranscript'
+                elif isinstance(transcript_data, dict):
+                    text = transcript_data.get('text')
+                    end_of_turn = transcript_data.get('message_type') == 'FinalTranscript'
+                elif isinstance(transcript_data, str):
+                    text = transcript_data
+                    end_of_turn = True  # Assume final for string responses
+                
+                if text:
+                    future = asyncio.run_coroutine_threadsafe(
+                        self.on_transcript_callback(text, end_of_turn),
+                        self.loop
+                    )
+            except Exception as e:
+                logger.error(f"Failed to process transcript: {e}")
+    
+    def _on_error_received(self, error):
+        """Handle errors from newer API"""
+        logger.warning(f"Streaming error: {error}")
     
     async def send_audio(self, audio_chunk: bytes):
         """Send audio data to AssemblyAI"""
