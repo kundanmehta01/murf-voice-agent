@@ -180,17 +180,17 @@ class AssemblyAIStreamingWrapper:
                 import assemblyai as aai
                 aai.settings.api_key = api_key
                 
-                # Create RealtimeTranscriber with Universal Streaming model
+                # Create RealtimeTranscriber with minimal configuration for Universal Streaming
                 # See: https://www.assemblyai.com/docs/speech-to-text/universal-streaming
-                logger.info("🎯 Creating RealtimeTranscriber with Universal Streaming model...")
+                logger.info("🎯 Creating RealtimeTranscriber with minimal Universal Streaming config...")
+                
+                # Create with minimal parameters to avoid deprecated model issues
                 self.client = aai.RealtimeTranscriber(
-                    sample_rate=sample_rate,
                     on_data=self._on_transcript_received,
                     on_error=self._on_error_received,
                     on_open=self._on_session_opened,
-                    # Keep partial transcripts enabled for real-time feedback
-                    disable_partial_transcripts=False
-                    # Note: Removed on_close callback as it was causing premature session termination
+                    sample_rate=sample_rate
+                    # Note: Removed on_close callback and other parameters that might cause issues
                 )
                 # Connect using the standard connect method
                 self.client.connect()
