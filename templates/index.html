@@ -727,7 +727,9 @@
           
           // Create WebSocket connection with session ID
           const sessionId = getOrCreateSessionId();
-          ws = new WebSocket(`ws://${window.location.hostname}:8000/ws/audio?session=${sessionId}`);
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const port = window.location.protocol === 'https:' ? '' : ':8000';
+          ws = new WebSocket(`${protocol}//${window.location.hostname}${port}/ws/audio?session=${sessionId}`);
           ws.binaryType = 'arraybuffer';
           
           ws.onopen = () => {
