@@ -188,9 +188,8 @@ class AssemblyAIStreamingWrapper:
                     on_data=self._on_transcript_received,
                     on_error=self._on_error_received,
                     on_open=self._on_session_opened,
-                    # Specify the new Universal Streaming model explicitly
-                    disable_partial_transcripts=False,
-                    enable_extra_session_information=True
+                    # Keep partial transcripts enabled for real-time feedback
+                    disable_partial_transcripts=False
                     # Note: Removed on_close callback as it was causing premature session termination
                 )
                 # Connect using the standard connect method
