@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: murf-voice-agent
+    env: python
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PORT
+        value: 8000
+      - key: ASSEMBLYAI_API_KEY
+        sync: false
+      - key: MURF_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
+    healthCheckPath: /
+    scaling:
+      minInstances: 1
+      maxInstances: 1
+    autoDeploy: true

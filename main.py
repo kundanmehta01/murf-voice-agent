@@ -1321,7 +1321,14 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 if __name__ == "__main__":
     import uvicorn
+    import os
+    
+    # Get port from environment variable (for deployment) or use default
+    port = int(os.getenv("PORT", 8000))
+    host = "0.0.0.0"  # Bind to all interfaces for deployment
+    
     print("\n🚀 Starting Voice Agent Server...")
-    print("📍 Open http://127.0.0.1:8001 in your browser")
+    print(f"📍 Server will be available on port {port}")
     print("🎤 Make sure to allow microphone access when prompted\n")
-    uvicorn.run(app, host="127.0.0.1", port=8001)
+    
+    uvicorn.run(app, host=host, port=port)

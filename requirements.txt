@@ -1,13 +1,31 @@
-fastapi==0.104.1
-uvicorn==0.24.0
-python-dotenv==1.0.0
-httpx==0.25.2
-pydantic==2.5.0
-jinja2>=3.1.0
-assemblyai
-murf
-websockets>=11.0
-requests>=2.31.0
-pytz>=2023.3
+# Web Framework - Use stable versions
+fastapi==0.103.2
+uvicorn[standard]==0.23.2
 
-google-generativeai>=0.5.0
+# Core Dependencies - Avoid compilation issues
+python-dotenv==1.0.0
+httpx==0.25.1
+pydantic==2.4.2
+jinja2==3.1.2
+websockets==11.0.3
+requests==2.31.0
+pytz==2023.3
+
+# AI Services - Use stable versions
+assemblyai==0.30.0
+murf==2.0.2
+google-generativeai==0.7.2
+
+# Required dependencies
+typing-extensions==4.8.0
+anyio==3.7.1
+sniffio==1.3.0
+idna==3.4
+certifi==2023.7.22
+charset-normalizer==3.3.0
+urllib3==2.0.7
+starlette==0.27.0
+annotated-types==0.6.0
+click==8.1.7
+h11==0.14.0
+MarkupSafe==2.1.3
