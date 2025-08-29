@@ -11,9 +11,9 @@ websockets==11.0.3
 pytz==2023.3
 
 # AI/ML services (optional - app degrades gracefully if missing)
-assemblyai==0.28.4
-murf==1.0.0
-google-generativeai==0.8.2
+assemblyai==0.43.1
+murf
+google-generativeai
 
 # Additional utilities that might be needed
 aiofiles==23.2.1
