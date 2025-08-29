@@ -1,6 +1,4 @@
-# Minimal dependencies to avoid Rust compilation
-# All of these have pre-compiled wheels available
-
+# Core web framework dependencies
 fastapi==0.85.0
 uvicorn==0.18.3
 python-dotenv==1.0.0
@@ -9,5 +7,13 @@ jinja2==3.1.2
 pydantic==1.10.12
 websockets==11.0.3
 
-# Try to skip problematic packages for now
-# We'll add them back one by one if deployment succeeds
+# Time and timezone handling
+pytz==2023.3
+
+# AI/ML services (optional - app degrades gracefully if missing)
+assemblyai==0.28.4
+murf==1.0.0
+google-generativeai==0.8.2
+
+# Additional utilities that might be needed
+aiofiles==23.2.1
