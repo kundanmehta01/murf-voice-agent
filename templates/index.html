@@ -255,6 +255,54 @@
     .record-btn.recording {
       animation: pulse 1s infinite;
     }
+    
+    /* API Warning Styles */
+    .api-warning {
+      position: relative;
+      opacity: 0.7;
+    }
+    
+    .api-warning::before {
+      content: "\f023";
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #ef4444;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      z-index: 10;
+    }
+    
+    .api-warning:hover {
+      opacity: 1;
+    }
+    
+    /* Status text styling */
+    .status-text.warning {
+      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.1);
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 10px;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .status-text.success {
+      color: #4ade80;
+      background: rgba(74, 222, 128, 0.1);
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 10px;
+      border: 1px solid rgba(74, 222, 128, 0.3);
+    }
   </style>
 </head>
 <body>
@@ -502,6 +550,9 @@
       gemini: '',
       openweather: ''
     };
+    
+    // Flag to track if API keys are configured
+    let apiKeysConfigured = false;
 
     // Session management
     function getOrCreateSessionId() {
@@ -583,13 +634,19 @@
       const indicator = document.getElementById('apiStatusIndicator');
       const activeKeys = Object.values(apiConfig).filter(key => key && key.length > 0).length;
       
-      if (activeKeys > 0) {
+      // Update the global flag based on API key status
+      apiKeysConfigured = activeKeys > 0;
+      
+      if (apiKeysConfigured) {
         indicator.className = 'status-indicator status-ready';
         indicator.innerHTML = `<i class="fas fa-check-circle"></i> ${activeKeys}/4 APIs Configured`;
       } else {
         indicator.className = 'status-indicator status-unavailable';
         indicator.innerHTML = '<i class="fas fa-key"></i> Configure API Keys';
       }
+      
+      // Update UI based on API key status
+      updateUIBasedOnAPIStatus();
     }
 
     function loadApiKeys() {
@@ -732,6 +789,9 @@
 
     // Voice Recording and Processing Functions
     async function toggleRecording() {
+      // Check if API keys are configured first
+      if (!checkAPIKeysConfigured()) return;
+      
       const btn = document.getElementById('recordToggle');
       const recordLabel = document.getElementById('recordLabel');
       
@@ -953,7 +1013,61 @@
       }
     }
 
+    // Function to check if API keys are configured and show warning if not
+    function checkAPIKeysConfigured() {
+      if (!apiKeysConfigured) {
+        // Show warning in the status text
+        const status = document.getElementById('uploadStatus');
+        status.textContent = '⚠️ Please configure your API keys first!';
+        status.className = 'status-text warning';
+        
+        // Auto-open the config modal
+        openConfigModal();
+        
+        return false;
+      }
+      return true;
+    }
+    
+    // Function to update UI elements based on API key status
+    function updateUIBasedOnAPIStatus() {
+      const recordBtn = document.getElementById('recordToggle');
+      const autoToggleBtn = document.getElementById('autoToggle');
+      const sendTextBtn = document.querySelector('.text-chat-section .btn');
+      const textInput = document.getElementById('textInput');
+      
+      if (apiKeysConfigured) {
+        // Enable all controls
+        recordBtn.disabled = false;
+        autoToggleBtn.disabled = false;
+        sendTextBtn.disabled = false;
+        textInput.disabled = false;
+        
+        recordBtn.title = "Start recording";
+        autoToggleBtn.title = "Enable auto streaming";
+        sendTextBtn.title = "Send message";
+        
+        // Remove warning classes if any
+        recordBtn.classList.remove('api-warning');
+        autoToggleBtn.classList.remove('api-warning');
+        sendTextBtn.classList.remove('api-warning');
+      } else {
+        // Add warning class but don't disable buttons
+        // This allows clicks to trigger the warning
+        recordBtn.classList.add('api-warning');
+        autoToggleBtn.classList.add('api-warning');
+        sendTextBtn.classList.add('api-warning');
+        
+        recordBtn.title = "API keys required";
+        autoToggleBtn.title = "API keys required";
+        sendTextBtn.title = "API keys required";
+      }
+    }
+    
     function toggleAutoStream() {
+      // Check if API keys are configured first
+      if (!checkAPIKeysConfigured()) return;
+      
       autoStream = !autoStream;
       const btn = document.getElementById('autoToggle');
       btn.innerHTML = autoStream ? 
@@ -1207,6 +1321,9 @@
 
     // Text Chat Functions
     async function sendTextMessage() {
+      // Check if API keys are configured first
+      if (!checkAPIKeysConfigured()) return;
+      
       const input = document.getElementById('textInput');
       const message = input.value.trim();
       
