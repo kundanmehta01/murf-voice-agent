@@ -823,7 +823,10 @@
           };
           
           // Set up audio streaming (16kHz PCM for AssemblyAI)
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+          // Use default sample rate and let browser decide
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          console.log(`Audio context sample rate: ${audioCtx.sampleRate}Hz`);
+          
           const source = audioCtx.createMediaStreamSource(micStream);
           const processor = audioCtx.createScriptProcessor(4096, 1, 1);
           
@@ -867,12 +870,39 @@
             return result;
           }
           
+          let audioChunkCount = 0;
+          let totalAudioBytes = 0;
+          
           processor.onaudioprocess = (e) => {
             if (ws && ws.readyState === WebSocket.OPEN) {
               const input = e.inputBuffer.getChannelData(0);
+              
+              // Check if input has actual audio data
+              const hasAudio = input.some(sample => Math.abs(sample) > 0.001);
+              if (!hasAudio) {
+                console.log('⚠️ Silent audio chunk detected');
+                return; // Skip silent chunks
+              }
+              
               const downsampled = downsample(input, audioCtx.sampleRate, 16000);
               const pcm16Buffer = floatTo16BitPCM(downsampled);
-              ws.send(pcm16Buffer);
+              
+              audioChunkCount++;
+              totalAudioBytes += pcm16Buffer.byteLength;
+              
+              // Log audio stats every 50 chunks
+              if (audioChunkCount % 50 === 1) {
+                console.log(`🎵 Audio processing: chunk #${audioChunkCount}, size: ${pcm16Buffer.byteLength} bytes, total: ${totalAudioBytes} bytes`);
+                console.log(`🎵 Sample rates: input=${audioCtx.sampleRate}Hz -> output=16000Hz, downsampled length: ${downsampled.length}`);
+              }
+              
+              try {
+                ws.send(pcm16Buffer);
+              } catch (error) {
+                console.error('❌ Failed to send audio chunk:', error);
+              }
+            } else if (ws) {
+              console.warn('⚠️ WebSocket not ready, state:', ws.readyState);
             }
           };
           
