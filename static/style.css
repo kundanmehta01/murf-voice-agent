@@ -1,0 +1,706 @@
+/* ========== Root Theme ========== */
+:root {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --accent: #f59e0b;
+  --accent-hover: #d97706;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --text-light: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dark: #0f172a;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-bg-hover: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.2);
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow: 0 10px 25px rgba(0,0,0,0.3);
+  --shadow-lg: 0 20px 40px rgba(0,0,0,0.4);
+}
+    /* background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #475569 75%, #64748b 100%); */
+/* ========== Body & Background ========== */
+body {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: pink;
+    color: var(--text-light);
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.6;
+}
+
+
+/* ========== Container ========== */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+}
+
+/* ========== Header ========== */
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header p {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* ========== Feature Sections ========== */
+.feature-section {
+  margin-bottom: 24px;
+}
+
+.feature-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.feature-title i {
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+.feature-title h2 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-light);
+}
+
+/* ========== Persona Section ========== */
+.persona-section {
+  background: var(--card-bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.persona-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.persona-title i {
+  color: var(--accent);
+  font-size: 1.2rem;
+}
+
+.persona-title h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.persona-select {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  color: var(--text-light);
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+}
+
+.persona-select:hover {
+  background: var(--card-bg-hover);
+  border-color: var(--border-hover);
+}
+
+.persona-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.current-persona {
+  background: var(--card-bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 25px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.current-persona:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ========== Status Sections ========== */
+.weather-section, .productivity-section {
+  background: var(--card-bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.weather-section:hover, .productivity-section:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-hover);
+}
+
+.weather-title, .productivity-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.weather-title i, .productivity-title i {
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+.weather-title h4, .productivity-title h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.weather-status, .productivity-status {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.current-time {
+  font-size: 0.9rem;
+  color: var(--success);
+  margin: 8px 0;
+}
+
+.weather-tip, .productivity-tip {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* ========== Controls & Buttons ========== */
+.agent-controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  margin: 32px 0;
+  flex-wrap: wrap;
+}
+
+.btn {
+  background: var(--primary);
+  border: none;
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-accent {
+  background: var(--accent);
+}
+
+.btn-accent:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--border-hover);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+}
+
+/* ========== Record Button ========== */
+.record-btn {
+  background: linear-gradient(135deg, var(--error), #dc2626);
+  border: none;
+  padding: 16px 32px;
+  border-radius: 50px;
+  cursor: pointer;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.record-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(239, 68, 68, 0.4);
+}
+
+.record-btn.recording {
+  background: linear-gradient(135deg, var(--success), #059669);
+  animation: pulse 2s infinite;
+}
+
+.record-btn.recording:hover {
+  box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.record-icon {
+  font-size: 1.2rem;
+}
+
+/* ========== VU Meter ========== */
+.vu {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+}
+
+.vu .bar {
+  width: 3px;
+  height: var(--vu, 8px);
+  background: currentColor;
+  border-radius: 2px;
+  transition: height 0.1s ease;
+}
+
+.vu .b1 { opacity: 0.6; }
+.vu .b2 { opacity: 0.8; }
+.vu .b3 { opacity: 1.0; }
+
+/* ========== Status & Typing Indicator ========== */
+.status-text {
+  font-size: 0.9em;
+  margin-top: 6px;
+  text-align: center;
+}
+
+.typing {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  margin-top: 6px;
+}
+.typing span {
+  width: 5px;
+  height: 5px;
+  background: #fff;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.5; }
+  40% { opacity: 1; }
+}
+
+/* ========== Chat Bubble & History ========== */
+.chat-bubble {
+  background: rgba(255,255,255,0.05);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+.chat-bubble .user-msg, .chat-bubble .ai-msg {
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  background: rgba(255,255,255,0.08);
+}
+
+.chat-history-card {
+  margin-top: 1.2em;
+  padding: 10px;
+  border-radius: var(--radius);
+  background: rgba(255,255,255,0.06);
+}
+.history-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #fff;
+}
+.history-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.chat-history-list {
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* ========== Status Indicators ========== */
+.status-text {
+  font-size: 0.9rem;
+  margin: 12px 0;
+  text-align: center;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  transition: all 0.3s ease;
+}
+
+.status-text.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-text.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.status-text.pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-text.warn {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 5px rgba(16, 185, 129, 0.3); }
+  to { box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+}
+
+/* ========== API Configuration ========== */
+.config-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--accent);
+  border: none;
+  padding: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: white;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+  z-index: 1000;
+}
+
+.config-button:hover {
+  background: var(--accent-hover);
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+}
+
+.config-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.config-modal.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.config-content {
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.config-modal.open .config-content {
+  transform: scale(1);
+}
+
+.config-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.config-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.config-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.3s ease;
+}
+
+.config-close:hover {
+  color: var(--text-light);
+}
+
+.config-section {
+  margin-bottom: 24px;
+}
+
+.config-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-section i {
+  color: var(--accent);
+}
+
+.config-input-group {
+  margin-bottom: 16px;
+}
+
+.config-input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.config-input {
+  width: 100%;
+  background: var(--card-bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-light);
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.config-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  background: var(--card-bg);
+}
+
+.config-input[type="password"] {
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+}
+
+.config-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+
+.config-status.connected {
+  color: var(--success);
+}
+
+.config-status.disconnected {
+  color: var(--error);
+}
+
+.config-status.checking {
+  color: var(--warning);
+}
+
+.config-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.turn-complete {
+  animation: turnCompleteFlash 1.5s ease-in-out;
+}
+
+@keyframes turnCompleteFlash {
+  0% { background: var(--card-bg); }
+  50% { background: rgba(16, 185, 129, 0.1); }
+  100% { background: var(--card-bg); }
+}
+
+/* ========== Chat History Improvements ========== */
+.chat-history-card {
+  background: var(--card-bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.chat-bubble {
+  background: var(--card-bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.chat-bubble .user-msg, .chat-bubble .ai-msg {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+}
+
+.chat-bubble .user-msg {
+  border-left: 3px solid var(--primary);
+}
+
+.chat-bubble .ai-msg {
+  border-left: 3px solid var(--accent);
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+  
+  .container {
+    padding: 20px;
+    margin: 0;
+  }
+  
+  .header h1 {
+    font-size: 2rem;
+  }
+  
+  .agent-controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .btn, .record-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .persona-select {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .config-button {
+    top: 10px;
+    right: 10px;
+  }
+  
+  .config-content {
+    margin: 20px;
+    width: calc(100% - 40px);
+    padding: 24px;
+  }
+  
+  .config-actions {
+    flex-direction: column;
+  }
+}
