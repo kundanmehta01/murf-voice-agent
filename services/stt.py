@@ -220,23 +220,27 @@ class AssemblyAIStreamingWrapper:
     
     def _on_transcript_received(self, transcript_data):
         """Handle transcript data from newer API (RealtimeTranscript)"""
+        logger.info(f"🎤 AssemblyAI transcript received: {transcript_data}")
+        
         if self.on_transcript_callback and self.loop:
             try:
                 # v0.43.1+ uses RealtimeTranscript objects
                 text = getattr(transcript_data, 'text', None)
                 message_type = getattr(transcript_data, 'message_type', '')
                 
+                logger.info(f"📝 Processing transcript: text='{text}', type='{message_type}'")
+                
                 # Determine if this is a final transcript
                 end_of_turn = message_type == 'FinalTranscript'
                 
                 if text:
-                    logger.debug(f"Received transcript: '{text}' (type: {message_type})")
+                    logger.info(f"✅ Valid transcript: '{text}' (final: {end_of_turn})")
                     future = asyncio.run_coroutine_threadsafe(
                         self.on_transcript_callback(text, end_of_turn),
                         self.loop
                     )
                 else:
-                    logger.debug(f"Empty transcript received with message_type: {message_type}")
+                    logger.info(f"⚠️ Empty transcript received with message_type: {message_type}")
             except Exception as e:
                 logger.error(f"Failed to process transcript: {e}")
     
@@ -267,12 +271,20 @@ class AssemblyAIStreamingWrapper:
             try:
                 # Debug: log audio chunk size
                 if len(audio_chunk) > 0:
-                    logger.debug(f"Streaming {len(audio_chunk)} bytes to AssemblyAI")
+                    # Log every 50th chunk to avoid spam, but show we're getting audio
+                    if hasattr(self, '_audio_chunk_count'):
+                        self._audio_chunk_count += 1
+                    else:
+                        self._audio_chunk_count = 1
+                        
+                    if self._audio_chunk_count % 50 == 1:
+                        logger.info(f"🎵 Streaming audio to AssemblyAI: {len(audio_chunk)} bytes (chunk #{self._audio_chunk_count})")
+                    
                     self.client.stream(audio_chunk)
                 else:
                     logger.debug("Received empty audio chunk, skipping")
             except Exception as e:
-                logger.warning(f"Failed to send audio: {e}")
+                logger.error(f"Failed to send audio: {e}")
                 # Mark as disconnected on stream error
                 self.is_connected = False
     

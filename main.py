@@ -1084,11 +1084,18 @@ async def websocket_audio(ws: WebSocket):
                     # Forward PCM16 audio to AssemblyAI
                     try:
                         await session.send_audio(audio_data)
-                        # Only log occasionally to avoid spam
-                        # logger.debug(f"Forwarding {len(audio_data)} bytes to AssemblyAI")
+                        # Log first few chunks to confirm audio reception
+                        if not hasattr(session, '_ws_audio_count'):
+                            session._ws_audio_count = 0
+                        session._ws_audio_count += 1
+                        
+                        if session._ws_audio_count <= 3 or session._ws_audio_count % 100 == 0:
+                            logger.info(f"🎤 WebSocket received audio chunk #{session._ws_audio_count}: {len(audio_data)} bytes")
                     except Exception as e:
                         logger.error(f"Failed to send audio to AssemblyAI: {e}")
                         break
+                else:
+                    logger.warning("Received empty audio data in WebSocket message")
             else:
                 logger.debug(f"Received message without audio data: {message.keys()}")
 
