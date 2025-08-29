@@ -158,9 +158,14 @@ class AssemblyAIStreamingWrapper:
                     disable_partial_transcripts=False
                 ))
             elif _STREAMING_IMPORTS == 'new' or _STREAMING_IMPORTS == 'basic':
-                # Use newer/basic API (v0.43.1+)
+                # Use newer/basic API (v0.43.1+) with Universal streaming model
                 import assemblyai as aai
                 aai.settings.api_key = api_key
+                
+                # Create RealtimeTranscriber
+                # Note: Model deprecation warnings come from AssemblyAI's server-side
+                # transition to Universal Streaming. See: 
+                # https://www.assemblyai.com/docs/speech-to-text/universal-streaming
                 self.client = aai.RealtimeTranscriber(
                     sample_rate=sample_rate,
                     on_data=self._on_transcript_received,
@@ -272,7 +277,7 @@ class AssemblyAIStreamingWrapper:
                 if _STREAMING_IMPORTS == 'v3':
                     self.client.disconnect(terminate=True)
                 else:
-                    # Basic API uses close() method
+                    # Basic API (v0.43.1+) uses close() method
                     self.client.close()
                 self.is_connected = False
                 logger.info("AssemblyAI streaming session closed")
