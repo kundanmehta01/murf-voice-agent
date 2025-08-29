@@ -404,6 +404,23 @@
         </button>
       </div>
 
+      <!-- Text Chat Interface -->
+      <div class="text-chat-section" style="margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+        <h4 style="color: #4ade80; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-keyboard"></i> Text Chat (Try this while voice setup is in progress)
+        </h4>
+        <div style="display: flex; gap: 8px; align-items: flex-end;">
+          <div style="flex: 1;">
+            <input type="text" id="textInput" placeholder="Type your message here... (e.g., 'How are you?')" 
+                   style="width: 100%; padding: 12px 15px; border: 2px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.1); color: white; font-size: 14px;"
+                   onkeypress="if(event.key==='Enter') sendTextMessage()">
+          </div>
+          <button class="btn" onclick="sendTextMessage()" style="padding: 12px 20px;">
+            <i class="fas fa-paper-plane"></i> Send
+          </button>
+        </div>
+      </div>
+
       <div id="uploadStatus" class="status-text"></div>
       <div id="typingIndicator" class="typing" style="display:none" aria-live="polite" aria-label="AI is speaking">
         <span></span><span></span><span></span>
@@ -1155,6 +1172,91 @@
         }
       } catch (error) {
         console.error('Failed to refresh chat history:', error);
+      }
+    }
+
+    // Text Chat Functions
+    async function sendTextMessage() {
+      const input = document.getElementById('textInput');
+      const message = input.value.trim();
+      
+      if (!message) return;
+      
+      // Clear input and disable while processing
+      input.value = '';
+      input.disabled = true;
+      
+      // Show user message in chat bubble
+      const bubbleUser = document.getElementById('bubbleUser');
+      const bubbleAI = document.getElementById('bubbleAI');
+      if (bubbleUser) {
+        bubbleUser.textContent = message;
+        bubbleAI.textContent = '';
+        document.getElementById('chatBubble').style.display = 'block';
+      }
+      
+      // Show typing indicator
+      document.getElementById('typingIndicator').style.display = 'block';
+      document.getElementById('uploadStatus').textContent = '💭 AI is thinking...';
+      
+      try {
+        const sessionId = getOrCreateSessionId();
+        
+        // Use the agent chat endpoint
+        const formData = new FormData();
+        formData.append('prompt', message);
+        formData.append('model', 'gemini-1.5-flash');
+        
+        const response = await fetch(`/agent/chat/${sessionId}`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.llm_text) {
+          // Show AI response
+          if (bubbleAI) {
+            bubbleAI.textContent = data.llm_text;
+          }
+          
+          document.getElementById('uploadStatus').textContent = '✅ Response received!';
+          
+          // Play audio if available
+          if (data.audio_urls && data.audio_urls.length > 0) {
+            const audio = document.getElementById('replyAudio');
+            audio.src = data.audio_urls[0];
+            audio.play().catch(e => console.warn('Audio play failed:', e));
+          }
+        } else {
+          if (bubbleAI) {
+            bubbleAI.textContent = 'Sorry, I encountered an issue. Please try again.';
+          }
+          document.getElementById('uploadStatus').textContent = '❌ Failed to get response';
+        }
+        
+        // Update chat history
+        setTimeout(() => refreshChatHistory(), 500);
+        
+      } catch (error) {
+        console.error('Error sending text message:', error);
+        if (bubbleAI) {
+          bubbleAI.textContent = 'Sorry, there was an error processing your message.';
+        }
+        document.getElementById('uploadStatus').textContent = '❌ Connection error';
+      } finally {
+        // Re-enable input
+        input.disabled = false;
+        input.focus();
+        document.getElementById('typingIndicator').style.display = 'none';
+        
+        // Clear status after a few seconds
+        setTimeout(() => {
+          const status = document.getElementById('uploadStatus');
+          if (status.textContent.includes('Response received') || status.textContent.includes('Failed') || status.textContent.includes('Connection error')) {
+            status.textContent = '';
+          }
+        }, 3000);
       }
     }
 
