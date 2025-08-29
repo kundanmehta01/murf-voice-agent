@@ -158,20 +158,19 @@ class AssemblyAIStreamingWrapper:
                     disable_partial_transcripts=False
                 ))
             elif _STREAMING_IMPORTS == 'new' or _STREAMING_IMPORTS == 'basic':
-                # Use newer/basic API
+                # Use newer/basic API (v0.43.1+)
                 import assemblyai as aai
                 aai.settings.api_key = api_key
                 self.client = aai.RealtimeTranscriber(
                     sample_rate=sample_rate,
                     on_data=self._on_transcript_received,
-                    on_error=self._on_error_received
+                    on_error=self._on_error_received,
+                    on_open=self._on_session_opened,
+                    on_close=self._on_session_closed
                 )
-                # Connect method may differ
-                if hasattr(self.client, 'connect'):
-                    self.client.connect()
-                else:
-                    # Newer API might auto-connect or use different method
-                    pass
+                # Connect using the standard connect method
+                self.client.connect()
+                logger.info(f"Connected to AssemblyAI with basic API using sample_rate={sample_rate}")
             else:
                 raise ValueError(f"Unsupported streaming API: {_STREAMING_IMPORTS}")
             
@@ -215,63 +214,81 @@ class AssemblyAIStreamingWrapper:
             self.client.on(StreamingEvents.Error, on_error)
     
     def _on_transcript_received(self, transcript_data):
-        """Handle transcript data from newer API"""
+        """Handle transcript data from newer API (RealtimeTranscript)"""
         if self.on_transcript_callback and self.loop:
             try:
-                # Extract text from transcript data
-                text = None
-                end_of_turn = False
+                # v0.43.1+ uses RealtimeTranscript objects
+                text = getattr(transcript_data, 'text', None)
+                message_type = getattr(transcript_data, 'message_type', '')
                 
-                if hasattr(transcript_data, 'text'):
-                    text = transcript_data.text
-                    end_of_turn = getattr(transcript_data, 'message_type', '') == 'FinalTranscript'
-                elif isinstance(transcript_data, dict):
-                    text = transcript_data.get('text')
-                    end_of_turn = transcript_data.get('message_type') == 'FinalTranscript'
-                elif isinstance(transcript_data, str):
-                    text = transcript_data
-                    end_of_turn = True  # Assume final for string responses
+                # Determine if this is a final transcript
+                end_of_turn = message_type == 'FinalTranscript'
                 
                 if text:
+                    logger.debug(f"Received transcript: '{text}' (type: {message_type})")
                     future = asyncio.run_coroutine_threadsafe(
                         self.on_transcript_callback(text, end_of_turn),
                         self.loop
                     )
+                else:
+                    logger.debug(f"Empty transcript received with message_type: {message_type}")
             except Exception as e:
                 logger.error(f"Failed to process transcript: {e}")
     
     def _on_error_received(self, error):
-        """Handle errors from newer API"""
-        logger.warning(f"Streaming error: {error}")
+        """Handle errors from newer API (RealtimeError)"""
+        error_msg = getattr(error, 'error', str(error))
+        logger.warning(f"Streaming error: {error_msg}")
+    
+    def _on_session_opened(self, session_opened):
+        """Handle session opened event"""
+        session_id = getattr(session_opened, 'session_id', 'unknown')
+        logger.info(f"AssemblyAI session opened: {session_id}")
+    
+    def _on_session_closed(self):
+        """Handle session closed event"""
+        logger.info("AssemblyAI session closed")
+        self.is_connected = False
     
     async def send_audio(self, audio_chunk: bytes):
         """Send audio data to AssemblyAI"""
-        if self.is_connected:
+        if self.is_connected and self.client:
             try:
                 # Debug: log audio chunk size
                 if len(audio_chunk) > 0:
                     logger.debug(f"Streaming {len(audio_chunk)} bytes to AssemblyAI")
-                self.client.stream(audio_chunk)
+                    self.client.stream(audio_chunk)
+                else:
+                    logger.debug("Received empty audio chunk, skipping")
             except Exception as e:
                 logger.warning(f"Failed to send audio: {e}")
+                # Mark as disconnected on stream error
+                self.is_connected = False
     
     async def close(self):
         """Close the streaming session"""
-        if self.is_connected:
+        if self.is_connected and self.client:
             try:
-                self.client.disconnect(terminate=True)
+                if _STREAMING_IMPORTS == 'v3':
+                    self.client.disconnect(terminate=True)
+                else:
+                    # Basic API uses close() method
+                    self.client.close()
                 self.is_connected = False
+                logger.info("AssemblyAI streaming session closed")
             except Exception as e:
                 logger.warning(f"Error closing session: {e}")
+                self.is_connected = False
 
 
 async def stream_transcribe(
     on_transcript: Callable[[str, bool], Awaitable[None]],
-    loop: Optional[asyncio.AbstractEventLoop] = None
+    loop: Optional[asyncio.AbstractEventLoop] = None,
+    session_id: Optional[str] = None
 ) -> Optional[object]:
     """Create a streaming transcription session with AssemblyAI"""
-    if not STT_AVAILABLE or not _V3_OK:
-        logger.warning("STT not available or v3 SDK not imported")
+    if not _V3_OK:
+        logger.warning(f"STT streaming not available - imports: {_STREAMING_IMPORTS}")
         return None
     
     try:
@@ -279,7 +296,8 @@ async def stream_transcribe(
         wrapper = AssemblyAIStreamingWrapper(
             sample_rate=16000,
             on_transcript=on_transcript,
-            loop=loop
+            loop=loop,
+            session_id=session_id
         )
         return wrapper
     except Exception as e:
