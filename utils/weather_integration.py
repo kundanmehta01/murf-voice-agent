@@ -11,21 +11,31 @@ from services.weather import (
 from utils.logger import logger
 
 # Weather-related keywords and patterns for detection
-WEATHER_KEYWORDS = [
-    # Current weather
-    'weather', 'temperature', 'temp', 'hot', 'cold', 'sunny', 'rainy', 'cloudy',
-    'humid', 'dry', 'windy', 'stormy', 'snow', 'snowing', 'rain', 'raining',
-    'clear', 'overcast', 'foggy', 'misty',
-    
-    # Forecast
-    'forecast', 'tomorrow', 'today', 'weekend', 'next week', 'this week',
-    'later', 'tonight', 'morning', 'afternoon', 'evening',
-    
-    # Location indicators
-    'in', 'at', 'for', 'near', 'around', 'outside',
-    
-    # Questions
-    "what's", "how's", "is it", "will it", "should i", "do i need"
+# Primary weather keywords (higher weight)
+PRIMARY_WEATHER_KEYWORDS = [
+    'weather', 'temperature', 'temp', 'forecast', 'celsius', 'fahrenheit',
+    'degrees', 'sunny', 'rainy', 'cloudy', 'humid', 'humidity', 'windy', 
+    'stormy', 'snow', 'snowing', 'rain', 'raining', 'clear', 'overcast', 
+    'foggy', 'misty', 'chilly', 'freezing', 'boiling', 'mild'
+]
+
+# Secondary weather keywords (lower weight)
+SECONDARY_WEATHER_KEYWORDS = [
+    'hot', 'cold', 'warm', 'cool', 'dry', 'wet', 'tomorrow', 'today', 
+    'weekend', 'tonight', 'morning', 'afternoon', 'evening'
+]
+
+# Weather-specific question patterns
+WEATHER_QUESTION_PATTERNS = [
+    r"what'?s\s+(?:the\s+)?weather",
+    r"how'?s\s+(?:the\s+)?weather",
+    r"is\s+it\s+(?:hot|cold|warm|cool|sunny|rainy|cloudy|windy)",
+    r"will\s+it\s+(?:rain|snow|be\s+(?:hot|cold|warm|cool|sunny|cloudy))",
+    r"should\s+i\s+(?:bring|wear|take).*(?:jacket|umbrella|sunscreen)",
+    r"do\s+i\s+need.*(?:jacket|umbrella|sunscreen|coat)",
+    r"temperature.*(?:in|at|for)",
+    r"forecast.*(?:in|at|for)",
+    r"how\s+(?:hot|cold|warm|cool)\s+is\s+it.*(?:in|at)"
 ]
 
 FORECAST_KEYWORDS = [
@@ -45,19 +55,38 @@ def detect_weather_query(text: str) -> Dict[str, any]:
     """
     text_lower = text.lower().strip()
     
-    # Check for weather keywords
-    weather_score = 0
-    for keyword in WEATHER_KEYWORDS:
-        if keyword in text_lower:
-            weather_score += 1
+    # First check for specific weather question patterns (high confidence)
+    pattern_matches = 0
+    for pattern in WEATHER_QUESTION_PATTERNS:
+        if re.search(pattern, text_lower):
+            pattern_matches += 1
     
-    # If no weather keywords found, not a weather query
-    if weather_score == 0:
+    # Check for primary weather keywords (high weight)
+    primary_score = 0
+    for keyword in PRIMARY_WEATHER_KEYWORDS:
+        if keyword in text_lower:
+            primary_score += 2  # Higher weight for primary keywords
+    
+    # Check for secondary weather keywords (lower weight)
+    secondary_score = 0
+    for keyword in SECONDARY_WEATHER_KEYWORDS:
+        if keyword in text_lower:
+            secondary_score += 1
+    
+    # Calculate total confidence score
+    total_score = (pattern_matches * 3) + primary_score + secondary_score
+    confidence = min(total_score / 6.0, 1.0)  # Normalize to 0-1
+    
+    # Set minimum confidence threshold to avoid false positives
+    MIN_CONFIDENCE_THRESHOLD = 0.3
+    
+    if confidence < MIN_CONFIDENCE_THRESHOLD:
         return {
             'is_weather_query': False,
             'query_type': 'none',
             'location': None,
-            'time_frame': None
+            'time_frame': None,
+            'confidence': confidence
         }
     
     # Determine query type
@@ -78,29 +107,43 @@ def detect_weather_query(text: str) -> Dict[str, any]:
         'query_type': query_type,
         'location': location,
         'time_frame': time_frame,
-        'confidence': min(weather_score / 3.0, 1.0)  # Normalize confidence score
+        'confidence': confidence
     }
 
 def extract_location(text: str) -> Optional[str]:
     """
-    Extract location from weather query using simple pattern matching
+    Extract location from weather query using improved pattern matching
     """
-    # Common patterns for location extraction
+    text_clean = text.strip().lower()
+    
+    # Enhanced patterns for better location extraction
     patterns = [
-        r'(?:weather|temperature|temp|forecast)?\s*(?:in|at|for|near|around)\s+([a-zA-Z\s,]+?)(?:\s|$|\?|\.)',
-        r'(?:weather|temperature|temp|forecast)?\s*(?:in|at|for|near|around)\s+([a-zA-Z\s,]+)',
-        r'([a-zA-Z\s,]+?)\s+(?:weather|temperature|temp|forecast)',
-        r"(?:what's|how's)\s+(?:the\s+)?(?:weather|temperature|temp).*?(?:in|at|for|near|around)\s+([a-zA-Z\s,]+?)(?:\s|$|\?|\.)"
+        # Pattern for "weather of [location]" - handles the user's case
+        r'weather\s+of\s+([a-zA-Z\s,.-]+?)(?:\?|\.|$)',
+        # Pattern for "in/at/for [location]"
+        r'(?:weather|temperature|temp|forecast|hot|cold|warm|cool).*?(?:in|at|for|near|around)\s+([a-zA-Z\s,.-]+?)(?:\?|\.|$)',
+        # Pattern for "[location] weather/temperature/forecast"
+        r'^([a-zA-Z\s,.-]+?)\s+(?:weather|temperature|temp|forecast)',
+        # Pattern for questions like "what's the weather in [location]"
+        r"(?:what'?s|how'?s)\s+(?:the\s+)?(?:weather|temperature|temp).*?(?:in|at|for|near|around)\s+([a-zA-Z\s,.-]+?)(?:\?|\.|$)",
+        # Pattern for "how hot/cold is it in [location]"
+        r'how\s+(?:hot|cold|warm|cool)\s+is\s+it.*?(?:in|at|for|near|around)\s+([a-zA-Z\s,.-]+?)(?:\?|\.|$)',
+        # General fallback pattern
+        r'(?:in|at|for|near|around)\s+([a-zA-Z\s,.-]+?)(?:\?|\.|$)'
     ]
     
     for pattern in patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
+        match = re.search(pattern, text_clean, re.IGNORECASE)
         if match:
             location = match.group(1).strip()
-            # Clean up common words
-            location = re.sub(r'\b(the|like|today|tomorrow|now|currently)\b', '', location, flags=re.IGNORECASE)
-            location = location.strip(' ,')
-            if len(location) > 1:
+            
+            # Clean up common words and artifacts
+            location = re.sub(r'\b(the|like|today|tomorrow|now|currently|weather|temperature|temp|forecast|it|is)\b', '', location, flags=re.IGNORECASE)
+            location = re.sub(r'\s+', ' ', location)  # Normalize spaces
+            location = location.strip(' ,.?-')
+            
+            # Validate the extracted location
+            if len(location) > 1 and not location.isdigit():
                 return location
     
     return None

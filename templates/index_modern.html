@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VoiceWave - AI Chat Companion</title>
+  <title>Murf AI Voice Agent</title>
   <link rel="stylesheet" href="/static/style_modern.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -75,15 +75,6 @@
 
     <!-- Main Content Area -->
     <div class="main-content">
-      <!-- Project Header -->
-      <div class="project-header">
-        <h1 class="project-title">
-          <i class="fas fa-wave-square"></i>
-          VoiceWave
-        </h1>
-        <p class="project-subtitle">Your AI Chat Companion</p>
-      </div>
-      
       <!-- Top Bar -->
       <div class="top-bar">
         <div class="start-talking-container">
@@ -92,14 +83,9 @@
             <span id="recordLabel">Start Talking</span>
           </button>
         </div>
-        <div class="top-bar-actions">
-          <button class="clear-chat-btn" onclick="clearChat()" title="Clear Chat">
-            <i class="fas fa-broom"></i>
-          </button>
-          <button class="settings-btn" onclick="openConfigModal()" title="Configure API Keys">
-            <i class="fas fa-cog"></i>
-          </button>
-        </div>
+        <button class="settings-btn" onclick="openConfigModal()" title="Configure API Keys">
+          <i class="fas fa-cog"></i>
+        </button>
       </div>
 
       <!-- Chat Area -->
@@ -286,9 +272,6 @@
         if (data.personas && Array.isArray(data.personas)) {
           characterGrid.innerHTML = '';
           
-          // Store personas globally
-          personas = data.personas;
-          
           // Create character cards
           data.personas.forEach((persona, index) => {
             const characterCard = document.createElement('div');
@@ -358,30 +341,6 @@
       });
     }
 
-    // Get current character info
-    function getCurrentCharacterInfo() {
-      const currentPersona = personas.find(p => p.id === (selectedCharacter || 'default'));
-      if (currentPersona) {
-        return {
-          name: currentPersona.name,
-          emoji: currentPersona.emoji
-        };
-      }
-      
-      // Fallback mapping
-      const fallbackMapping = {
-        'default': { name: 'Ava', emoji: '👩' },
-        'professional': { name: 'Ethan', emoji: '👨' },
-        'friendly': { name: 'Sophia', emoji: '👩‍💼' },
-        'creative': { name: 'Liam', emoji: '👨‍💻' }
-      };
-      
-      return fallbackMapping[selectedCharacter] || fallbackMapping['default'];
-    }
-    
-    // Store personas globally for character info lookup
-    let personas = [];
-
     // Chat Functions
     function addMessage(content, isUser = false, isStreaming = false) {
       const chatMessages = document.getElementById('chatMessages');
@@ -394,19 +353,19 @@
             ${content}
           </div>
           <div class="message-avatar">
-            <div class="user-avatar-fallback">You</div>
+            <img src="/static/avatars/user.jpg" alt="You" onerror="this.outerHTML='<div class=\\"user-avatar-fallback\\">You</div>';">
           </div>
         `;
       } else {
-        const characterInfo = getCurrentCharacterInfo();
+        const currentCharacter = selectedCharacter || 'default';
         messageDiv.innerHTML = `
           <div class="message-avatar">
             <div class="ai-avatar">
-              <span>${characterInfo.emoji}</span>
+              <span id="aiAvatarEmoji">🤖</span>
             </div>
           </div>
           <div class="message-content ai-bubble">
-            <div class="ai-name">${characterInfo.name}</div>
+            <div class="ai-name" id="aiMessageName">Ava</div>
             <div class="ai-text" ${isStreaming ? 'id="streamingText"' : ''}>${content}</div>
           </div>
         `;
@@ -483,19 +442,17 @@
       const activeKeys = Object.values(apiConfig).filter(key => key && key.length > 0).length;
       apiKeysConfigured = activeKeys > 0;
       
-      // Update service status indicators in sidebar
-      updateSidebarServiceStatus('weather', apiConfig.openweather ? 'enabled' : 'disabled');
-      updateSidebarServiceStatus('productivity', apiConfig.gemini ? 'enabled' : 'disabled');
+      // Update service status indicators
+      updateServiceStatus('weather', apiConfig.openweather ? 'enabled' : 'disabled');
+      updateServiceStatus('productivity', apiConfig.gemini ? 'enabled' : 'disabled');
     }
 
-    function updateSidebarServiceStatus(service, status) {
+    function updateServiceStatus(service, status) {
       const serviceElement = document.getElementById(`${service}Service`);
       if (!serviceElement) return;
       
       const statusDot = serviceElement.querySelector('.status-dot');
       const statusText = serviceElement.querySelector('.status-text');
-      
-      if (!statusDot || !statusText) return;
       
       if (status === 'enabled') {
         statusDot.className = 'status-dot enabled';
@@ -503,39 +460,6 @@
       } else {
         statusDot.className = 'status-dot disabled';
         statusText.textContent = 'Disabled';
-      }
-    }
-
-    // Clear Chat Function
-    async function clearChat() {
-      if (!confirm('Are you sure you want to clear the chat history?')) {
-        return;
-      }
-      
-      try {
-        // Clear the visual chat messages
-        const chatMessages = document.getElementById('chatMessages');
-        if (chatMessages) {
-          chatMessages.innerHTML = '';
-        }
-        
-        // Clear server-side history
-        const sessionId = getOrCreateSessionId();
-        const response = await fetch(`/agent/history/${encodeURIComponent(sessionId)}`, {
-          method: 'DELETE'
-        });
-        
-        if (response.ok) {
-          console.log('Chat history cleared successfully');
-          // Add a fresh greeting message
-          setTimeout(() => {
-            addMessage('Hello! How can I assist you today?', false);
-          }, 300);
-        } else {
-          console.error('Failed to clear chat history on server');
-        }
-      } catch (error) {
-        console.error('Error clearing chat:', error);
       }
     }
 
