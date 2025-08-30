@@ -8,6 +8,7 @@ __pycache__/
 
 # Env vars
 .env
+.env.backup
 
 # OS cruft
 .DS_Store
